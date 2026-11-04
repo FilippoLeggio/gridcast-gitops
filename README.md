@@ -1,3 +1,3 @@
 # gridcast-gitops
 
-Stato desiderato dei cluster di GridCast, sincronizzato da Argo CD.
+Desired state of GridCast clusters, synchronized by Argo CD.
