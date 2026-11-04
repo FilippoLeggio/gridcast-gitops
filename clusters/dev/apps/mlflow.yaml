@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlflow
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  sources:
+    # The chart, from the application repository.
+    - repoURL: https://github.com/FilippoLeggio/gridcast
+      targetRevision: main
+      path: charts/mlflow
+      helm:
+        releaseName: mlflow
+        valueFiles:
+          - $values/apps/mlflow/dev/values.yaml
+    # The values, from this repository, referenced above as $values.
+    - repoURL: https://github.com/FilippoLeggio/gridcast-gitops
+      targetRevision: main
+      ref: values
+    # The sealed secrets of this environment.
+    - repoURL: https://github.com/FilippoLeggio/gridcast-gitops
+      targetRevision: main
+      path: apps/mlflow/dev/secrets
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlflow
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

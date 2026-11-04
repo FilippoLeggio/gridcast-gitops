@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gridcast
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/FilippoLeggio/gridcast
+      targetRevision: main
+      path: charts/gridcast
+      helm:
+        releaseName: gridcast
+        valueFiles:
+          - $values/apps/gridcast/dev/values.yaml
+    - repoURL: https://github.com/FilippoLeggio/gridcast-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gridcast
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
