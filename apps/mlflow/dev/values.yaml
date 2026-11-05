@@ -1,0 +1,2 @@
+images:
+  mlflow: ghcr.io/filippoleggio/gridcast-mlflow:3.18.0-fa0b294
