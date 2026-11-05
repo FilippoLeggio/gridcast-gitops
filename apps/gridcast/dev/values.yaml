@@ -1,10 +1,8 @@
 image:
   # Set by CI when a new image is published on main.
-  tag: fa0b294
-
+  tag: a95e579
 migrations:
   hookMode: argocd
-
 api:
   autoscaling:
     enabled: true
