@@ -1,6 +1,6 @@
 image:
   # Set by CI when a new image is published on main.
-  tag: a95e579
+  tag: 0ccd4b6
 migrations:
   hookMode: argocd
 api:
