@@ -8,3 +8,6 @@ api:
     enabled: true
     minReplicas: 1
     maxReplicas: 3
+metrics:
+  serviceMonitor:
+    enabled: true
