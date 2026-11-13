@@ -1,0 +1,81 @@
+# Monitoring stack: Prometheus Operator, Prometheus, Alertmanager, Grafana, exporters.
+# Wave -1: its CRDs (ServiceMonitor, PrometheusRule) must exist before the apps that use them.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 93.2.2
+      helm:
+        releaseName: kps
+        valuesObject:
+          fullnameOverride: kps
+
+          # k3s runs scheduler, controller-manager, proxy and etcd inside one process, not
+          # as pods: scraping them would only produce targets that are always down.
+          kubeEtcd: { enabled: false }
+          kubeControllerManager: { enabled: false }
+          kubeScheduler: { enabled: false }
+          kubeProxy: { enabled: false }
+          defaultRules:
+            rules:
+              etcd: false
+              kubeControllerManager: false
+              kubeSchedulerAlerting: false
+              kubeSchedulerRecording: false
+              kubeProxy: false
+
+          prometheus:
+            prometheusSpec:
+              # Pick up ServiceMonitors and rules from every namespace, not only those
+              # carrying this release's label.
+              serviceMonitorSelectorNilUsesHelmValues: false
+              podMonitorSelectorNilUsesHelmValues: false
+              ruleSelectorNilUsesHelmValues: false
+              retention: 7d
+              retentionSize: 3GB
+              resources:
+                requests: { cpu: 100m, memory: 512Mi }
+                limits: { memory: 1536Mi }
+              storageSpec:
+                volumeClaimTemplate:
+                  spec:
+                    accessModes: ["ReadWriteOnce"]
+                    resources: { requests: { storage: 5Gi } }
+
+          alertmanager:
+            alertmanagerSpec:
+              resources:
+                requests: { cpu: 10m, memory: 32Mi }
+                limits: { memory: 128Mi }
+
+          grafana:
+            admin:
+              existingSecret: grafana-admin
+              userKey: admin-user
+              passwordKey: admin-password
+            resources:
+              requests: { cpu: 50m, memory: 128Mi }
+              limits: { memory: 384Mi }
+    - repoURL: https://github.com/FilippoLeggio/gridcast-gitops
+      targetRevision: main
+      path: apps/monitoring/dev/secrets
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    retry:
+      limit: 10
+      backoff: { duration: 30s, factor: 2, maxDuration: 10m }
+    syncOptions:
+      - CreateNamespace=true
+      # The stack's CRDs are too large for client-side apply (see below).
+      - ServerSideApply=true
